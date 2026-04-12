@@ -416,9 +416,18 @@ if __name__ == '__main__':
     model_loaded = load_model()
 
     if not model_loaded:
-        print("\n❌ CANNOT START: Model not found!")
-        print("   Run this command first:  python train_model.py")
+    print("\n⚠️ Model not found. Training model now...")
+
+    from train_model import main
+    main()
+
+    print("\n🔄 Reloading model after training...")
+    model_loaded = load_model()
+
+    if not model_loaded:
+        print("❌ Failed to load model even after training!")
         exit(1)
+        
 
     # Step 3: Start the server
     print("\n[3/3] Starting Flask server...")
