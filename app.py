@@ -417,17 +417,15 @@ if __name__ == '__main__':
 
     # ✅ ONLY train if model NOT found
     if not model_loaded:
-        print("\n⚠️ Model not found. Training model now...")
+        print("\n⚠️ Model not found. Training model in background...")
 
-        from train_model import main
-        main()
+        def train_and_reload():
+            from train_model import main
+            main()
+            print("\n🔄 Reloading model after training...")
+            load_model()
 
-        print("\n🔄 Reloading model after training...")
-        model_loaded = load_model()
-
-        if not model_loaded:
-            print("❌ Failed to load model even after training!")
-            exit(1)
+        threading.Thread(target=train_and_reload, daemon=True).start()
 
     # Step 3: Start the server
     print("\n[3/3] Starting Flask server...")
@@ -439,6 +437,7 @@ if __name__ == '__main__':
 
     import os
     port = int(os.environ.get("PORT", 5000))
+
     app.run(
         host='0.0.0.0',
         port=port,
