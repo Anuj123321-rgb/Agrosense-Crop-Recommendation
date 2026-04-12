@@ -416,7 +416,7 @@ if __name__ == '__main__':
     model_loaded = load_model()
 
     if not model_loaded:
-    print("\n⚠️ Model not found. Training model now...")
+        print("\n⚠️ Model not found. Training model now...")
 
     from train_model import main
     main()
