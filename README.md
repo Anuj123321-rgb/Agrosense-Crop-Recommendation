@@ -40,3 +40,4 @@ Deployed using Render (Free Cloud Platform)
 * Accuracy: ~99%
 * Dataset: Crop Recommendation Dataset (2200+ samples)
 
+
