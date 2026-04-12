@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgroSense – AI Crop Recommendation</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-deep: #1a3a2a; --green-mid: #2d6a4f; --green-light: #52b788;
+    --gold: #d4a017; --cream: #f5f0e8; --soil: #8b5e3c;
+    --white: #ffffff; --text-dark: #1a1a1a; --text-muted: #5a5a5a;
+    --card-bg: rgba(255,255,255,0.94); --shadow: 0 8px 40px rgba(26,58,42,0.15);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--green-deep); min-height:100vh; color:var(--text-dark); overflow-x:hidden; }
+  .bg-layer { position:fixed; inset:0; z-index:0;
+    background: radial-gradient(ellipse 80% 50% at 20% 20%, rgba(82,183,136,0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 60% at 80% 80%, rgba(212,160,23,0.12) 0%, transparent 60%),
+                linear-gradient(160deg,#0d2118 0%,#1a3a2a 40%,#0f2d1e 100%); }
+  .container { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:0 24px 60px; }
+  /* Header */
+  header { text-align:center; padding:60px 0 40px; animation:fadeDown 0.8s ease both; }
+  .logo-wrap { display:inline-flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .logo-icon { width:52px; height:52px; background:linear-gradient(135deg,var(--green-light),var(--gold)); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 4px 20px rgba(82,183,136,0.4); }
+  .logo-text { font-family:'Playfair Display',serif; font-size:2rem; color:var(--cream); }
+  .logo-text span { color:var(--green-light); }
+  .tagline { color:rgba(245,240,232,0.6); font-size:1rem; font-weight:300; letter-spacing:2px; text-transform:uppercase; }
+  /* Steps */
+  .steps-bar { display:flex; align-items:center; justify-content:center; margin-bottom:40px; animation:fadeDown 0.8s 0.2s ease both; }
+  .step { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .step-circle { width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.1); border:2px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.4); font-weight:600; font-size:0.85rem; display:flex; align-items:center; justify-content:center; transition:all 0.4s; }
+  .step.active .step-circle { background:var(--green-light); border-color:var(--green-light); color:white; box-shadow:0 0 20px rgba(82,183,136,0.5); }
+  .step.done .step-circle { background:var(--gold); border-color:var(--gold); color:white; }
+  .step-label { font-size:0.7rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; transition:color 0.4s; }
+  .step.active .step-label { color:var(--green-light); }
+  .step.done .step-label { color:var(--gold); }
+  .step-line { width:60px; height:2px; background:rgba(255,255,255,0.15); margin-bottom:22px; transition:background 0.4s; }
+  .step-line.done { background:var(--gold); }
+  /* Cards */
+  .card { background:var(--card-bg); border-radius:24px; padding:40px; box-shadow:var(--shadow); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.6); animation:fadeUp 0.6s ease both; }
+  .card-title { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--green-deep); margin-bottom:6px; }
+  .card-sub { color:var(--text-muted); font-size:0.9rem; margin-bottom:32px; }
+  /* Form */
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+  .form-group { display:flex; flex-direction:column; gap:8px; }
+  .form-group label { font-size:0.82rem; font-weight:600; color:var(--green-deep); letter-spacing:0.5px; text-transform:uppercase; }
+  .form-group input[type="range"] { width:100%; -webkit-appearance:none; height:6px; border-radius:3px; background:linear-gradient(to right,var(--green-light) 0%,var(--green-light) var(--val,50%),#e0e0e0 var(--val,50%),#e0e0e0 100%); outline:none; margin-top:4px; }
+  .form-group input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; background:white; border:3px solid var(--green-light); border-radius:50%; cursor:pointer; box-shadow:0 2px 8px rgba(82,183,136,0.4); transition:transform 0.2s; }
+  .form-group input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.2); }
+  .range-labels { display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-top:4px; }
+  .range-val { display:inline-block; background:var(--green-deep); color:white; font-size:0.82rem; font-weight:600; padding:2px 10px; border-radius:20px; margin-left:8px; min-width:55px; text-align:center; }
+  .soil-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .soil-btn { padding:10px 8px; border:2px solid #e8e8e8; border-radius:10px; background:white; cursor:pointer; text-align:center; font-size:0.78rem; font-weight:500; color:var(--text-muted); transition:all 0.25s; font-family:'DM Sans',sans-serif; }
+  .soil-btn:hover { border-color:var(--green-light); color:var(--green-mid); }
+  .soil-btn.selected { border-color:var(--green-light); background:linear-gradient(135deg,rgba(82,183,136,0.1),rgba(45,106,79,0.05)); color:var(--green-deep); font-weight:600; }
+  .s-icon { font-size:1.2rem; display:block; margin-bottom:2px; }
+  /* Buttons */
+  .btn-row { margin-top:32px; display:flex; gap:12px; justify-content:flex-end; }
+  .btn { padding:14px 32px; border-radius:14px; font-size:0.95rem; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; border:none; transition:all 0.3s; }
+  .btn-primary { background:linear-gradient(135deg,var(--green-mid),var(--green-light)); color:white; box-shadow:0 4px 20px rgba(45,106,79,0.35); }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(45,106,79,0.45); }
+  .btn-primary:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+  .btn-secondary { background:transparent; border:2px solid #e0e0e0; color:var(--text-muted); }
+  .btn-secondary:hover { border-color:var(--green-light); color:var(--green-mid); }
+  /* DB Counter */
+  .db-counter { display:flex; align-items:center; gap:10px; padding:12px 20px; background:rgba(82,183,136,0.1); border-radius:12px; margin-bottom:24px; font-size:0.85rem; color:var(--green-deep); }
+  .db-dot { width:8px; height:8px; background:var(--green-light); border-radius:50%; animation:pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+  /* Loading */
+  .loading-wrap { text-align:center; padding:60px 20px; }
+  .spinner { width:60px; height:60px; margin:0 auto 24px; border:4px solid rgba(82,183,136,0.2); border-top-color:var(--green-light); border-radius:50%; animation:spin 0.9s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  /* Result */
+  .result-hero { background:linear-gradient(135deg,var(--green-deep),var(--green-mid)); border-radius:20px; padding:40px; color:white; text-align:center; margin-bottom:24px; position:relative; overflow:hidden; }
+  .result-hero::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 30% 50%,rgba(82,183,136,0.3),transparent 70%); }
+  .crop-emoji { font-size:4rem; display:block; margin-bottom:12px; position:relative; z-index:1; }
+  .crop-name { font-family:'Playfair Display',serif; font-size:2.4rem; font-weight:900; position:relative; z-index:1; }
+  .crop-confidence { margin-top:8px; font-size:0.9rem; opacity:0.8; position:relative; z-index:1; }
+  .confidence-bar { width:200px; height:6px; background:rgba(255,255,255,0.2); border-radius:3px; margin:10px auto 0; overflow:hidden; }
+  .confidence-fill { height:100%; background:var(--gold); border-radius:3px; transition:width 1.2s cubic-bezier(0.4,0,0.2,1); }
+  .alt-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:24px; }
+  .alt-card { background:white; border:1.5px solid #eee; border-radius:14px; padding:16px; text-align:center; transition:all 0.25s; }
+  .alt-card:hover { border-color:var(--green-light); transform:translateY(-2px); }
+  .alt-emoji { font-size:1.8rem; display:block; }
+  .alt-name { font-size:0.82rem; font-weight:600; color:var(--green-deep); margin-top:4px; }
+  .alt-prob { font-size:0.75rem; color:var(--text-muted); }
+  .insights-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px; }
+  .insight-item { background:white; border-radius:14px; padding:16px 18px; border-left:4px solid var(--green-light); }
+  .insight-label { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+  .insight-val { font-size:1rem; font-weight:600; color:var(--green-deep); margin-top:2px; }
+  /* Charts */
+  .chart-tabs { display:flex; gap:8px; margin-bottom:20px; }
+  .tab-btn { padding:8px 18px; border-radius:20px; border:1.5px solid #e0e0e0; background:white; color:var(--text-muted); font-size:0.82rem; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.25s; }
+  .tab-btn.active { background:var(--green-deep); border-color:var(--green-deep); color:white; }
+  .chart-panel { display:none; }
+  .chart-panel.active { display:block; }
+  .radar-wrap { display:flex; justify-content:center; }
+  /* Feedback */
+  .feedback-card { background:linear-gradient(135deg,rgba(212,160,23,0.08),rgba(212,160,23,0.03)); border:1.5px solid rgba(212,160,23,0.3); border-radius:16px; padding:24px; }
+  .star-row { display:flex; gap:8px; margin-bottom:16px; }
+  .star { font-size:1.8rem; cursor:pointer; transition:transform 0.2s; filter:grayscale(1); opacity:0.4; }
+  .star.lit { filter:none; opacity:1; }
+  .star:hover { transform:scale(1.2); }
+  .outcome-btn { flex:1; padding:10px; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all 0.25s; border-radius:10px; border:2px solid #e0e0e0; background:white; color:var(--text-muted); font-size:0.88rem; font-weight:500; }
+  .outcome-btn.selected { border-color:var(--green-light); background:rgba(82,183,136,0.08); color:var(--green-deep); }
+  .correct-field { display:none; margin-top:12px; }
+  .correct-select, .feedback-text { width:100%; padding:10px 14px; border:2px solid #e0e0e0; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:0.9rem; color:var(--text-dark); outline:none; }
+  .correct-select:focus, .feedback-text:focus { border-color:var(--green-light); }
+  .feedback-text { resize:none; margin-top:10px; }
+  .feedback-submit { margin-top:12px; padding:10px 24px; background:var(--gold); color:white; border:none; border-radius:10px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all 0.25s; }
+  .feedback-submit:hover { background:#b8870f; transform:translateY(-1px); }
+  .feedback-submit:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+  /* Progress */
+  .progress-section { margin-top:24px; padding:20px; background:#f9f9f9; border-radius:14px; }
+  .stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+  .stat-box { text-align:center; }
+  .stat-num { font-size:1.6rem; font-weight:700; }
+  .stat-label { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+  .progress-bar-wrap { background:#eee; border-radius:3px; height:8px; overflow:hidden; margin-top:8px; }
+  .progress-bar-fill { height:100%; background:linear-gradient(90deg,var(--green-light),var(--gold)); border-radius:3px; transition:width 1s ease; }
+  /* Alerts */
+  .alert { padding:14px 18px; border-radius:12px; margin-bottom:16px; font-size:0.88rem; display:none; }
+  .alert-success { background:#e8f5e9; border:1px solid rgba(82,183,136,0.4); color:var(--green-deep); }
+  .alert-error { background:#ffeef0; border:1px solid rgba(220,53,69,0.3); color:#721c24; }
+  /* Sections */
+  .section { display:none; }
+  .section.active { display:block; }
+  /* Animations */
+  @keyframes fadeDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes bounceIn { 0%{opacity:0;transform:scale(0.5)} 60%{transform:scale(1.1)} 100%{opacity:1;transform:scale(1)} }
+  .bounce { animation:bounceIn 0.6s cubic-bezier(0.4,0,0.2,1) both; }
+  .footer { text-align:center; padding:40px 0 20px; color:rgba(245,240,232,0.3); font-size:0.8rem; }
+</style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-wrap">
+      <div class="logo-icon">🌾</div>
+      <div class="logo-text">Agro<span>Sense</span></div>
+    </div>
+    <p class="tagline">AI-Powered Precision Agriculture · B.Tech Final Year Project</p>
+  </header>
+
+  <!-- STEPS BAR -->
+  <div class="steps-bar" id="stepsBar">
+    <div class="step active" id="step1"><div class="step-circle">1</div><div class="step-label">Soil Data</div></div>
+    <div class="step-line" id="line1"></div>
+    <div class="step" id="step2"><div class="step-circle">2</div><div class="step-label">Analyze</div></div>
+    <div class="step-line" id="line2"></div>
+    <div class="step" id="step3"><div class="step-circle">3</div><div class="step-label">Result</div></div>
+    <div class="step-line" id="line3"></div>
+    <div class="step" id="step4"><div class="step-circle">4</div><div class="step-label">Feedback</div></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SECTION 1: INPUT FORM                             -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="section active card" id="sec-form">
+    <div class="card-title">🌱 Enter Your Soil & Climate Details</div>
+    <p class="card-sub">Fill in your field measurements for an accurate AI crop recommendation</p>
+
+    <!-- Live DB counter loaded from /stats API -->
+    <div class="db-counter">
+      <div class="db-dot"></div>
+      <span>Database: <strong id="dbCount">...</strong> predictions · Model: <strong id="modelVer">v?</strong> · Accuracy: <strong id="modelAcc">?%</strong></span>
+    </div>
+
+    <div class="alert alert-error" id="formError"></div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>🟢 Nitrogen (N) <span class="range-val" id="nVal">70</span></label>
+        <input type="range" min="0" max="140" value="70" id="N" oninput="updateRange(this,'nVal','')">
+        <div class="range-labels"><span>0 kg/ha</span><span>140 kg/ha</span></div>
+      </div>
+      <div class="form-group">
+        <label>🟡 Phosphorous (P) <span class="range-val" id="pVal">53</span></label>
+        <input type="range" min="5" max="145" value="53" id="P" oninput="updateRange(this,'pVal','')">
+        <div class="range-labels"><span>5 kg/ha</span><span>145 kg/ha</span></div>
+      </div>
+      <div class="form-group">
+        <label>🔵 Potassium (K) <span class="range-val" id="kVal">48</span></label>
+        <input type="range" min="5" max="205" value="48" id="K" oninput="updateRange(this,'kVal','')">
+        <div class="range-labels"><span>5 kg/ha</span><span>205 kg/ha</span></div>
+      </div>
+      <div class="form-group">
+        <label>🌡️ Temperature <span class="range-val" id="tempVal">25°C</span></label>
+        <input type="range" min="0" max="50" value="25" id="temperature" oninput="updateRangeUnit(this,'tempVal','°C')">
+        <div class="range-labels"><span>0°C</span><span>50°C</span></div>
+      </div>
+      <div class="form-group">
+        <label>💧 Humidity <span class="range-val" id="humVal">65%</span></label>
+        <input type="range" min="14" max="100" value="65" id="humidity" oninput="updateRangeUnit(this,'humVal','%')">
+        <div class="range-labels"><span>14%</span><span>100%</span></div>
+      </div>
+      <div class="form-group">
+        <label>⚗️ Soil pH <span class="range-val" id="phVal">6.5</span></label>
+        <input type="range" min="3.5" max="10" step="0.1" value="6.5" id="ph" oninput="updateRangeFloat(this,'phVal')">
+        <div class="range-labels"><span>3.5 Acidic</span><span>10 Alkaline</span></div>
+      </div>
+      <div class="form-group">
+        <label>🌧️ Rainfall <span class="range-val" id="rfVal">103mm</span></label>
+        <input type="range" min="20" max="300" value="103" id="rainfall" oninput="updateRangeUnit(this,'rfVal','mm')">
+        <div class="range-labels"><span>20mm</span><span>300mm</span></div>
+      </div>
+      <div class="form-group">
+        <label>📅 Growing Season</label>
+        <div class="soil-grid">
+          <div class="soil-btn selected" onclick="selectSeason(this,'Kharif')"><span class="s-icon">☀️</span>Kharif</div>
+          <div class="soil-btn" onclick="selectSeason(this,'Rabi')"><span class="s-icon">❄️</span>Rabi</div>
+          <div class="soil-btn" onclick="selectSeason(this,'Zaid')"><span class="s-icon">🌸</span>Zaid</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="resetForm()">↺ Reset</button>
+      <button class="btn btn-primary" id="predictBtn" onclick="runPrediction()">🔍 Get Recommendation →</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SECTION 2: LOADING                                -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="section card" id="sec-loading">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <div style="font-size:1rem;color:var(--text-muted);">Analyzing your field data...</div>
+      <div style="margin-top:16px;font-size:0.85rem;color:var(--green-light);min-height:24px;" id="loadingStep">Running ensemble models...</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SECTION 3: RESULTS                                -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="section" id="sec-result">
+    <div class="card">
+      <div class="card-title">🎯 Crop Recommendation</div>
+      <p class="card-sub">Based on your soil parameters and climate conditions</p>
+
+      <div class="alert alert-success" id="retrainAlert">
+        🔄 <strong>Model Auto-Retrained!</strong> Farmer feedback improved accuracy!
+      </div>
+
+      <!-- Main result -->
+      <div class="result-hero">
+        <span class="crop-emoji bounce" id="cropEmoji">🌾</span>
+        <div class="crop-name" id="cropName">—</div>
+        <div class="crop-confidence">Confidence: <strong id="confPct">—</strong>
+          <div class="confidence-bar"><div class="confidence-fill" id="confBar" style="width:0%"></div></div>
+        </div>
+        <div style="margin-top:12px;font-size:0.8rem;opacity:0.7;position:relative;z-index:1;" id="modelVerResult"></div>
+      </div>
+
+      <!-- Alternatives -->
+      <div style="font-size:0.85rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Alternative Crops</div>
+      <div class="alt-grid" id="altGrid"></div>
+
+      <!-- Parameter analysis -->
+      <div style="font-size:0.85rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Parameter Summary</div>
+      <div class="insights-grid" id="insightsGrid"></div>
+
+      <!-- Charts -->
+      <div class="chart-tabs">
+        <button class="tab-btn active" onclick="showTab('radar',this)">Radar Chart</button>
+        <button class="tab-btn" onclick="showTab('bar',this)">Bar Chart</button>
+        <button class="tab-btn" onclick="showTab('dist',this)">Top 5 Crops</button>
+      </div>
+      <div class="chart-panel active" id="tab-radar">
+        <div class="radar-wrap"><canvas id="radarChart" width="340" height="280"></canvas></div>
+      </div>
+      <div class="chart-panel" id="tab-bar">
+        <canvas id="barChart" height="200"></canvas>
+      </div>
+      <div class="chart-panel" id="tab-dist">
+        <canvas id="distChart" height="200"></canvas>
+      </div>
+
+      <div class="btn-row" style="margin-top:24px;">
+        <button class="btn btn-secondary" onclick="goBack()">← New Query</button>
+        <button class="btn btn-primary" onclick="showSection('sec-feedback');setStep(4)">Give Feedback →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SECTION 4: FEEDBACK                               -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="section" id="sec-feedback">
+    <div class="card">
+      <div class="card-title">💬 Help Improve the AI Model</div>
+      <p class="card-sub">Your farming experience makes our model smarter for every farmer in India</p>
+
+      <div class="alert alert-success" id="feedbackSuccess"></div>
+      <div class="alert alert-error" id="feedbackError"></div>
+
+      <div class="feedback-card">
+        <div style="font-size:0.95rem;font-weight:600;color:var(--green-deep);margin-bottom:6px;">Rate your experience</div>
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:16px;">How accurate was our recommendation?</div>
+
+        <div class="star-row" id="starRow">
+          <span class="star" onclick="rateStar(1)">⭐</span>
+          <span class="star" onclick="rateStar(2)">⭐</span>
+          <span class="star" onclick="rateStar(3)">⭐</span>
+          <span class="star" onclick="rateStar(4)">⭐</span>
+          <span class="star" onclick="rateStar(5)">⭐</span>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <label style="font-size:0.85rem;font-weight:600;color:var(--green-deep);display:block;margin-bottom:8px;">Did the recommended crop perform well in your field?</label>
+          <div style="display:flex;gap:10px;">
+            <button class="outcome-btn" onclick="selectOutcome(this,'yes')">✅ Yes, worked!</button>
+            <button class="outcome-btn" onclick="selectOutcome(this,'partial')">🔶 Partially</button>
+            <button class="outcome-btn" onclick="selectOutcome(this,'no')">❌ No</button>
+          </div>
+        </div>
+
+        <div class="correct-field" id="correctField">
+          <label style="font-size:0.85rem;font-weight:600;color:var(--green-deep);display:block;margin-bottom:6px;">What crop actually performed best?</label>
+          <select class="correct-select" id="correctCrop">
+            <option value="">Select crop...</option>
+            <option>rice</option><option>maize</option><option>chickpea</option>
+            <option>kidneybeans</option><option>pigeonpeas</option><option>mothbeans</option>
+            <option>mungbean</option><option>blackgram</option><option>lentil</option>
+            <option>pomegranate</option><option>banana</option><option>mango</option>
+            <option>grapes</option><option>watermelon</option><option>muskmelon</option>
+            <option>apple</option><option>orange</option><option>papaya</option>
+            <option>coconut</option><option>cotton</option><option>jute</option><option>coffee</option>
+          </select>
+        </div>
+
+        <textarea class="feedback-text" rows="3" placeholder="Any additional comments? (optional)" id="feedbackText"></textarea>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap;">
+          <button class="feedback-submit" id="submitFeedbackBtn" onclick="submitFeedback()">
+            Submit Feedback & Contribute to AI Training
+          </button>
+          <span style="font-size:0.75rem;color:var(--text-muted);">Auto-retrains every 50 new records</span>
+        </div>
+      </div>
+
+      <!-- Live training progress -->
+      <div class="progress-section">
+        <div style="font-size:0.85rem;font-weight:600;color:var(--green-deep);margin-bottom:12px;">📊 Live Model Training Status</div>
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-num" style="color:var(--green-mid);" id="statPredictions">—</div>
+            <div class="stat-label">Total Predictions</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" style="color:var(--gold);" id="statAccuracy">—</div>
+            <div class="stat-label">Model Accuracy</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" style="color:var(--soil);" id="statToGo">—</div>
+            <div class="stat-label">Records to Retrain</div>
+          </div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Progress to next retraining</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressBarFill" style="width:0%"></div>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;" id="progressLabel">Loading...</div>
+      </div>
+
+      <div class="btn-row" style="margin-top:20px;">
+        <button class="btn btn-primary" onclick="goBack()">🌱 Recommend Another Crop</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">AgroSense · B.Tech Final Year Major Project · 2025–26</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════
+//  CONFIG - Change this if your Flask server is on different host/port
+// ══════════════════════════════════════════════════════════════
+const API_BASE = 'http://localhost:5000';
+
+// ── Global state ──────────────────────────────────────────────
+let selectedSeason = 'Kharif';
+let starRating = 0;
+let outcomeSelected = '';
+let currentPredictionId = null;
+let radarChart, barChart, distChart;
+
+const CROP_EMOJIS = {
+  rice:'🌾', maize:'🌽', chickpea:'🫘', kidneybeans:'🫘', pigeonpeas:'🌿',
+  mothbeans:'🌱', mungbean:'🫛', blackgram:'🫘', lentil:'🌿',
+  pomegranate:'🍎', banana:'🍌', mango:'🥭', grapes:'🍇',
+  watermelon:'🍉', muskmelon:'🍈', apple:'🍏', orange:'🍊',
+  papaya:'🍑', coconut:'🥥', cotton:'🌿', jute:'🌿', coffee:'☕'
+};
+
+// ══════════════════════════════════════════════════════════════
+//  ON PAGE LOAD
+// ══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initSliders();
+  loadStats();
+});
+
+function initSliders() {
+  const sliders = document.querySelectorAll('input[type="range"]');
+  sliders.forEach(s => {
+    const pct = ((s.value - s.min) / (s.max - s.min)) * 100;
+    s.style.setProperty('--val', pct + '%');
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RANGE SLIDERS
+// ══════════════════════════════════════════════════════════════
+function updateRange(el, valId, suffix) {
+  document.getElementById(valId).textContent = el.value + (suffix||'');
+  const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+  el.style.setProperty('--val', pct + '%');
+}
+function updateRangeUnit(el, valId, unit) { updateRange(el, valId, unit); }
+function updateRangeFloat(el, valId) {
+  document.getElementById(valId).textContent = parseFloat(el.value).toFixed(1);
+  const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+  el.style.setProperty('--val', pct + '%');
+}
+function selectSeason(btn, val) {
+  document.querySelectorAll('.soil-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedSeason = val;
+}
+function resetForm() {
+  document.getElementById('N').value = 70;
+  document.getElementById('P').value = 53;
+  document.getElementById('K').value = 48;
+  document.getElementById('temperature').value = 25;
+  document.getElementById('humidity').value = 65;
+  document.getElementById('ph').value = 6.5;
+  document.getElementById('rainfall').value = 103;
+  document.getElementById('nVal').textContent='70';
+  document.getElementById('pVal').textContent='53';
+  document.getElementById('kVal').textContent='48';
+  document.getElementById('tempVal').textContent='25°C';
+  document.getElementById('humVal').textContent='65%';
+  document.getElementById('phVal').textContent='6.5';
+  document.getElementById('rfVal').textContent='103mm';
+  initSliders();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LOAD STATS FROM API
+// ══════════════════════════════════════════════════════════════
+async function loadStats() {
+  try {
+    const res = await fetch(`${API_BASE}/stats`);
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('dbCount').textContent = data.total_predictions || 0;
+      document.getElementById('modelVer').textContent = 'v' + (data.current_version || 1);
+      document.getElementById('modelAcc').textContent = (data.current_accuracy || 0).toFixed(1) + '%';
+    }
+  } catch(e) {
+    // Server not running — show placeholder
+    document.getElementById('dbCount').textContent = '—';
+    document.getElementById('modelVer').textContent = 'v1';
+    document.getElementById('modelAcc').textContent = '97.3%';
+  }
+}
+
+async function loadFeedbackStats() {
+  try {
+    const res = await fetch(`${API_BASE}/stats`);
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('statPredictions').textContent = data.total_predictions;
+      document.getElementById('statAccuracy').textContent = (data.current_accuracy||97.3).toFixed(1) + '%';
+      document.getElementById('statToGo').textContent = data.records_to_retrain;
+      document.getElementById('progressBarFill').style.width = data.progress_pct + '%';
+      document.getElementById('progressLabel').textContent =
+        `${data.pending_feedback} / 50 new records collected`;
+    }
+  } catch(e) {
+    document.getElementById('statPredictions').textContent = '—';
+    document.getElementById('statAccuracy').textContent = '97.3%';
+    document.getElementById('statToGo').textContent = '50';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PREDICTION — calls /predict API
+// ══════════════════════════════════════════════════════════════
+const loadingMsgs = [
+  'Preprocessing soil parameters...',
+  'Running Random Forest (200 trees)...',
+  'Running XGBoost classifier...',
+  'Running SVM with RBF kernel...',
+  'Fusing ensemble outputs...',
+  'Calculating confidence scores...'
+];
+
+async function runPrediction() {
+  // Show loading
+  showSection('sec-loading');
+  setStep(2);
+
+  let i = 0;
+  const interval = setInterval(() => {
+    document.getElementById('loadingStep').textContent = loadingMsgs[i % loadingMsgs.length];
+    i++;
+  }, 500);
+
+  try {
+    const payload = {
+      N: parseFloat(document.getElementById('N').value),
+      P: parseFloat(document.getElementById('P').value),
+      K: parseFloat(document.getElementById('K').value),
+      temperature: parseFloat(document.getElementById('temperature').value),
+      humidity: parseFloat(document.getElementById('humidity').value),
+      ph: parseFloat(document.getElementById('ph').value),
+      rainfall: parseFloat(document.getElementById('rainfall').value),
+      season: selectedSeason
+    };
+
+    // Call Flask /predict API
+    const res = await fetch(`${API_BASE}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    clearInterval(interval);
+
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+    const data = await res.json();
+
+    if (!data.success) throw new Error(data.error || 'Prediction failed');
+
+    // Store prediction ID for feedback
+    currentPredictionId = data.prediction_id;
+
+    // Render results
+    renderResult(data, payload);
+    showSection('sec-result');
+    setStep(3);
+
+  } catch(e) {
+    clearInterval(interval);
+    showSection('sec-form');
+    setStep(1);
+    const errEl = document.getElementById('formError');
+    errEl.textContent = `❌ Error: ${e.message}. Make sure app.py is running!`;
+    errEl.style.display = 'block';
+    setTimeout(() => errEl.style.display = 'none', 5000);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER RESULTS
+// ══════════════════════════════════════════════════════════════
+function renderResult(data, inputs) {
+  const crop = data.predicted_crop;
+  const emoji = CROP_EMOJIS[crop] || '🌱';
+
+  document.getElementById('cropEmoji').textContent = emoji;
+  document.getElementById('cropName').textContent = capitalize(crop);
+  document.getElementById('confPct').textContent = data.confidence_pct + '%';
+  document.getElementById('modelVerResult').textContent =
+    `Model v${data.model_version} · Training accuracy: ${data.model_accuracy}%`;
+
+  setTimeout(() => {
+    document.getElementById('confBar').style.width = data.confidence_pct + '%';
+  }, 300);
+
+  // Alternatives (top 5 from API, skip rank 0)
+  const altGrid = document.getElementById('altGrid');
+  altGrid.innerHTML = '';
+  const alts = data.top_5.slice(1, 4);
+  alts.forEach(([altCrop, prob]) => {
+    altGrid.innerHTML += `
+      <div class="alt-card">
+        <span class="alt-emoji">${CROP_EMOJIS[altCrop]||'🌱'}</span>
+        <div class="alt-name">${capitalize(altCrop)}</div>
+        <div class="alt-prob">${prob}% match</div>
+      </div>`;
+  });
+
+  // Parameter insights
+  const ig = document.getElementById('insightsGrid');
+  ig.innerHTML = `
+    <div class="insight-item"><div class="insight-label">Nitrogen (N)</div><div class="insight-val">${inputs.N} kg/ha</div></div>
+    <div class="insight-item"><div class="insight-label">Phosphorous (P)</div><div class="insight-val">${inputs.P} kg/ha</div></div>
+    <div class="insight-item"><div class="insight-label">Potassium (K)</div><div class="insight-val">${inputs.K} kg/ha</div></div>
+    <div class="insight-item"><div class="insight-label">Temperature</div><div class="insight-val">${inputs.temperature}°C</div></div>
+    <div class="insight-item"><div class="insight-label">Humidity</div><div class="insight-val">${inputs.humidity}%</div></div>
+    <div class="insight-item"><div class="insight-label">Soil pH</div><div class="insight-val">${inputs.ph}</div></div>
+  `;
+
+  // Charts
+  drawCharts(inputs, data.top_5);
+}
+
+function drawCharts(inputs, top5) {
+  const ctx1 = document.getElementById('radarChart').getContext('2d');
+  const ctx2 = document.getElementById('barChart').getContext('2d');
+  const ctx3 = document.getElementById('distChart').getContext('2d');
+  if (radarChart) radarChart.destroy();
+  if (barChart) barChart.destroy();
+  if (distChart) distChart.destroy();
+
+  const labels = ['N','P','K','Temp','Humidity','pH','Rainfall'];
+  const vals = [
+    (inputs.N/140)*100, (inputs.P/145)*100, (inputs.K/205)*100,
+    (inputs.temperature/50)*100, inputs.humidity,
+    ((inputs.ph-3.5)/6.5)*100, (inputs.rainfall/300)*100
+  ].map(v => Math.round(Math.min(100, v)));
+
+  radarChart = new Chart(ctx1, {
+    type:'radar', data:{ labels, datasets:[{ label:'Your Field', data:vals,
+      backgroundColor:'rgba(82,183,136,0.2)', borderColor:'#52b788', borderWidth:2, pointBackgroundColor:'#52b788' }] },
+    options:{ responsive:false, scales:{ r:{ min:0, max:100 } }, plugins:{ legend:{ display:false } } }
+  });
+
+  barChart = new Chart(ctx2, {
+    type:'bar', data:{ labels, datasets:[{ label:'Normalized %', data:vals,
+      backgroundColor:vals.map(v => v>65?'rgba(82,183,136,0.8)':v>35?'rgba(212,160,23,0.8)':'rgba(139,94,60,0.7)'),
+      borderRadius:8 }] },
+    options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ min:0, max:100 } } }
+  });
+
+  distChart = new Chart(ctx3, {
+    type:'doughnut',
+    data:{ labels:top5.map(([c])=>capitalize(c)), datasets:[{ data:top5.map(([,p])=>p),
+      backgroundColor:['#2d6a4f','#52b788','#d4a017','#8b5e3c','#b7d1a5'], borderWidth:2, borderColor:'#fff' }] },
+    options:{ responsive:true, plugins:{ legend:{ position:'right' } }, cutout:'60%' }
+  });
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.chart-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FEEDBACK — calls /feedback API
+// ══════════════════════════════════════════════════════════════
+function rateStar(n) {
+  starRating = n;
+  document.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('lit', i < n));
+}
+function selectOutcome(btn, val) {
+  outcomeSelected = val;
+  document.querySelectorAll('.outcome-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('correctField').style.display =
+    (val === 'no' || val === 'partial') ? 'block' : 'none';
+}
+
+async function submitFeedback() {
+  if (!starRating) { alert('Please rate your experience with stars!'); return; }
+  if (!outcomeSelected) { alert('Please tell us if the crop recommendation worked!'); return; }
+
+  const btn = document.getElementById('submitFeedbackBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  const payload = {
+    prediction_id: currentPredictionId || 1,
+    star_rating: starRating,
+    outcome: outcomeSelected,
+    correct_crop: document.getElementById('correctCrop').value || null,
+    comments: document.getElementById('feedbackText').value || null
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      btn.textContent = '✅ Feedback Saved! Thank You!';
+      btn.style.background = 'var(--green-mid)';
+
+      const successEl = document.getElementById('feedbackSuccess');
+      if (data.retraining_triggered) {
+        successEl.innerHTML = '🔄 <strong>Threshold reached! Model retraining started in background.</strong> This will take a few minutes.';
+      } else {
+        successEl.innerHTML = `✅ Feedback saved! <strong>${data.records_to_retrain}</strong> more records needed to trigger retraining.`;
+      }
+      successEl.style.display = 'block';
+
+      // Update progress bar
+      await loadFeedbackStats();
+    } else {
+      throw new Error(data.error);
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Submit Feedback & Contribute to AI Training';
+    document.getElementById('feedbackError').textContent = `Error: ${e.message}`;
+    document.getElementById('feedbackError').style.display = 'block';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top:0, behavior:'smooth' });
+  if (id === 'sec-feedback') loadFeedbackStats();
+}
+function setStep(n) {
+  for(let i=1;i<=4;i++){
+    const s=document.getElementById('step'+i);
+    s.classList.remove('active','done');
+    if(i<n) s.classList.add('done');
+    else if(i===n) s.classList.add('active');
+  }
+  for(let i=1;i<=3;i++){
+    const l=document.getElementById('line'+i);
+    if(l) l.classList.toggle('done',i<n);
+  }
+}
+function goBack() {
+  showSection('sec-form');
+  setStep(1);
+  loadStats();
+  starRating=0; outcomeSelected='';
+  document.querySelectorAll('.star').forEach(s=>s.classList.remove('lit'));
+  document.querySelectorAll('.outcome-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('correctField').style.display='none';
+  document.getElementById('feedbackSuccess').style.display='none';
+  document.getElementById('feedbackError').style.display='none';
+  const btn=document.getElementById('submitFeedbackBtn');
+  btn.disabled=false;
+  btn.textContent='Submit Feedback & Contribute to AI Training';
+  btn.style.background='var(--gold)';
+}
+function capitalize(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# =============================================================================
+# FILE: requirements.txt
+# Run this to install all dependencies: pip install -r requirements.txt
+# =============================================================================
+pandas==2.1.0
+numpy==1.24.0
+scikit-learn==1.3.0
+flask==3.0.0
+flask-cors==4.0.0
+xgboost==2.0.0
+lightgbm==4.1.0
+matplotlib==3.7.0
+seaborn==0.12.0
+apscheduler==3.10.0
