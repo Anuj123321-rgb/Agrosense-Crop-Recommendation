@@ -437,8 +437,10 @@ if __name__ == '__main__':
     print("  Press CTRL+C to stop")
     print("="*60 + "\n")
 
+    import os
+    port = int(os.environ.get("PORT", 5000))
     app.run(
-        host='0.0.0.0',    # accessible from any device on your network
-        port=5000,
-        debug=False         # set True during development for auto-reload
+        host='0.0.0.0',
+        port=port,
+        debug=False
     )
