@@ -232,6 +232,11 @@ def predict():
     }
     """
     try:
+        if model is None or scaler is None or encoder is None:
+            return jsonify({
+                "success": False,
+                "error": "Model is still loading. Please wait 1–2 minutes."
+            }), 503
         data = request.get_json()
 
         # Validate required fields
@@ -415,17 +420,8 @@ if __name__ == '__main__':
     print("\n[2/3] Loading ML model...")
     model_loaded = load_model()
 
-    # ✅ ONLY train if model NOT found
     if not model_loaded:
-        print("\n⚠️ Model not found. Training model in background...")
-
-        def train_and_reload():
-            from train_model import main
-            main()
-            print("\n🔄 Reloading model after training...")
-            load_model()
-
-        threading.Thread(target=train_and_reload, daemon=True).start()
+        print("❌ Model not found! Please upload trained model.")
 
     # Step 3: Start the server
     print("\n[3/3] Starting Flask server...")
