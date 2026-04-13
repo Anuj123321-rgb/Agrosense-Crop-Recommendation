@@ -35,6 +35,8 @@ python app.py
 
 Deployed using Render (Free Cloud Platform)
 
+Live link : https://agrosense-app-07bk.onrender.com
+
 ## 📊 Model Performance
 
 * Accuracy: ~99%
