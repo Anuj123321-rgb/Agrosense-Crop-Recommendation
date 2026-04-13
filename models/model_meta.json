@@ -1,7 +1,7 @@
 {
-  "version": 2,
-  "accuracy": 99.5465,
-  "trained_on": "2026-04-13 02:47:58",
+  "version": 3,
+  "accuracy": 99.3197,
+  "trained_on": "2026-04-13 11:14:53",
   "features": [
     "N",
     "P",
